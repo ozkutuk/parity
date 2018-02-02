@@ -1,7 +1,12 @@
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
 #include <chrono>
+#include <thread>
 #include <ncurses.h>
+
+static constexpr auto SLEEP_DURATION = std::chrono::milliseconds(10);
 
 class Timer {
 
@@ -33,23 +38,22 @@ void Timer::stop() {
 }
 
 void Timer::update() {
-    time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
+    if (started)
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
 }
 
 std::string Timer::elapsed() {
-    // TODO: does not work properly
-    if (!started)
-        return std::string("0:0.000");
     update();
     auto min = std::chrono::duration_cast<std::chrono::minutes>(time);
     auto sec = std::chrono::duration_cast<std::chrono::seconds>(time - min);
     auto msec = (time - min) - sec;
     
-    std::string result(std::to_string(min.count()) + ":" + 
-                      std::to_string(sec.count()) + "." + 
-                      std::to_string(msec.count()));
-    return result;
+    std::ostringstream resultStream;
+    resultStream << std::setfill('0') << std::setw(2) << min.count() << ":"
+                                      << std::setw(2) << sec.count() << "."
+                                      << std::setw(3) << msec.count();
 
+    return resultStream.str();
 }
 
 void drawMain() {
@@ -95,6 +99,7 @@ WINDOW * initTimer() {
     start_y = (col - width)  / 2;
            
     WINDOW * timerWindow = newwin(height, width, start_x, start_y);
+    nodelay(timerWindow, TRUE); // for the non-blocking wgetch
     return timerWindow;
 }
 
@@ -108,47 +113,42 @@ int main() {
     curs_set(0);
 
     Timer timer;
-    // timer.started = false;
 
     drawMain();
-    // refresh();
     WINDOW * timerWindow = initTimer();
     drawTimer(timerWindow, timer);
-    // wrefresh(timerWindow);
-
-    // int row, col;
-    // getmaxyx(stdscr, row, col);
 
     int keyPressed;
+    bool running = true;
 
-    while ((keyPressed = wgetch(timerWindow)) != 'q') {
+    while (running) {
         timer.update();
         drawTimer(timerWindow, timer);
-        // wrefresh(timerWindow);
-        if (keyPressed == KEY_RESIZE) {
-            // clear();
-            timerWindow = initTimer();
-            drawMain();
-            drawTimer(timerWindow, timer);
-            // refresh();
-            // getmaxyx(stdscr, row, col);
+
+        keyPressed = wgetch(timerWindow);
+
+        switch (keyPressed) {
+            case 'Q': // fall-through
+            case 'q':
+                running = false;
+                break;
+
+            case KEY_RESIZE:
+                timerWindow = initTimer();
+                drawMain();
+                drawTimer(timerWindow, timer);
+                break;
+
+            case ' ':
+                if (timer.started)
+                    timer.stop();
+                else
+                    timer.start();
+                break;
         }
 
-        else if (keyPressed == ' ') {
-            // wclear(timerWindow);
-            if (timer.started)
-                // timer.started = false;
-                timer.stop();
-            else
-                // timer.started = true;
-                timer.start();
-            drawTimer(timerWindow, timer);
-            // wrefresh(timerWindow);
-            // attron(A_BOLD);
-            // mvprintw(row/2, col/2 - 3, "START!");
-            // attroff(A_BOLD);
-        }
-
+            // drawTimer(timerWindow, timer);
+            std::this_thread::sleep_for(SLEEP_DURATION);
     }
 
     endwin();
