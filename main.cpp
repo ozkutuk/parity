@@ -68,7 +68,7 @@ void drawMain() {
 void drawTimer(WINDOW * win, Timer & timer) {
     // TODO: do not need to calculate these every draw
 
-    wclear(win);
+    // wclear(win);
     int timerRow, timerCol;
     getmaxyx(win, timerRow, timerCol);
     box(win, 0, 0);
