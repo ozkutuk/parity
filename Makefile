@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -Wall -Werror -Wextra -pedantic -std=c++11
+CXXFLAGS := -Wall -Wextra -Weffc++ -pedantic -std=c++11 -g
 LDLIBS := -lncurses
 
 BINDIR := bin

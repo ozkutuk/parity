@@ -8,6 +8,7 @@
 #include <ncurses.h>
 
 static constexpr auto SLEEP_DURATION = std::chrono::milliseconds(1);
+static constexpr int TIMER_PRECISION = 2;
 
 class Timer {
 
@@ -66,22 +67,38 @@ std::chrono::milliseconds Timer::avgTimes(const std::vector<std::chrono::millise
 }
 
 std::chrono::milliseconds Timer::avg() {
+    if(times.size() == 0)
+        return std::chrono::milliseconds::zero(); // TODO: return N/A maybe?
     return avgTimes(times.begin(), times.end());
 }
 
+std::string Timer::totalAverage() {
+    return formatTime(avg());
+}
+
+
 std::chrono::milliseconds Timer::ao5() {
-    return avgTimes(times.begin(), times.end());
+    // TODO: handle when times.size() < 5
+    return avgTimes(times.begin()+(times.size()-5), times.end());
 }
 
 std::string Timer::formatTime(std::chrono::milliseconds time) {
     auto min = std::chrono::duration_cast<std::chrono::minutes>(time);
     auto sec = std::chrono::duration_cast<std::chrono::seconds>(time - min);
     auto msec = (time - min) - sec;
+
+    /* 3 -> 1
+     * 2 -> 10
+     * 1 -> 100
+     * 0 -> invalid
+     * 10^(3 - TIMER_PRECISION)
+     */
+    const int precision = std::pow(10, 3-TIMER_PRECISION);
     
     std::ostringstream resultStream;
     resultStream << std::setfill('0') << std::setw(2) << min.count() << ":"
                                       << std::setw(2) << sec.count() << "."
-                                      << std::setw(3) << msec.count();
+                                      << std::setw(TIMER_PRECISION) << msec.count() / precision;
 
     return resultStream.str();
 }
@@ -119,6 +136,19 @@ void drawTimer(WINDOW * win, Timer & timer) {
     wrefresh(win);
 }
 
+void drawAvgs(WINDOW * win, Timer & timer) {
+    int timerRow, timerCol;
+    getmaxyx(win, timerRow, timerCol);
+    box(win, 0, 0);
+
+    std::string startMsg(timer.totalAverage());
+    mvwprintw( win, 
+               timerRow / 2,
+              (timerCol - startMsg.length()) / 2,
+               startMsg.c_str());
+    wrefresh(win);
+}
+
 WINDOW * initTimer() {
     int row, col;
     getmaxyx(stdscr, row, col);
@@ -138,6 +168,16 @@ WINDOW * initTimer() {
     return timerWindow;
 }
 
+WINDOW * initAvgs(WINDOW *timerWindow) {
+    int height, width, start_x, start_y;
+    getmaxyx(timerWindow, height, width);
+    getbegyx(timerWindow, start_x, start_y);
+
+    WINDOW * avgsWindow = newwin(3, width, start_x + height + 1, start_y);
+    nodelay(avgsWindow, TRUE); // for the non-blocking wgetch
+    return avgsWindow;
+}
+
 int main() {
 
     // ncurses initialization
@@ -153,12 +193,16 @@ int main() {
     WINDOW * timerWindow = initTimer();
     drawTimer(timerWindow, timer);
 
+    WINDOW * avgsWindow = initAvgs(timerWindow);
+    drawAvgs(avgsWindow, timer);
+
     int keyPressed;
     bool running = true;
 
     while (running) {
         timer.update();
         drawTimer(timerWindow, timer);
+        drawAvgs(avgsWindow, timer);
 
         keyPressed = wgetch(timerWindow);
 

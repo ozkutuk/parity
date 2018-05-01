@@ -1,0 +1,14 @@
+Mmain.cpp	main.cpp	/^int main() {$/
+SLEEP_DURATION	main.cpp	9
+Timer	main.cpp	11
+Timer::Timer	main.cpp	/^Timer::Timer() : started (false),$/
+Timer::elapsed	main.cpp	/^std::string Timer::elapsed() {$/
+Timer::start	main.cpp	/^void Timer::start() {$/
+Timer::startTime	main.cpp	22
+Timer::started	main.cpp	14
+Timer::stop	main.cpp	/^void Timer::stop() {$/
+Timer::time	main.cpp	23
+Timer::update	main.cpp	/^void Timer::update() {$/
+drawMain	main.cpp	/^void drawMain() {$/
+drawTimer	main.cpp	/^void drawTimer(WINDOW * win, Timer & timer) {$/
+initTimer	main.cpp	/^WINDOW * initTimer() {$/
