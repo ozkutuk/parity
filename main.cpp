@@ -1,18 +1,23 @@
 #include <string>
+#include <vector>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
 #include <chrono>
-#include <thread>
+#include <thread> // sleep_for
 #include <ncurses.h>
 
-static constexpr auto SLEEP_DURATION = std::chrono::milliseconds(10);
+static constexpr auto SLEEP_DURATION = std::chrono::milliseconds(1);
 
 class Timer {
 
 public:
     bool started;
     std::string elapsed();
+    std::string avgOfFive();
+    std::string totalAverage();
+    // std::string avgOfTwelve();
+
     Timer();
     void start(); // start resets the timer automatically
     void stop();
@@ -21,6 +26,15 @@ public:
 private:
     std::chrono::steady_clock::time_point startTime;
     std::chrono::milliseconds time;
+    std::vector<std::chrono::milliseconds> times;
+
+    std::string formatTime(std::chrono::milliseconds time);
+    // std::chrono::milliseconds avgTimes(const std::vector<std::chrono::milliseconds> & timeVec);
+    std::chrono::milliseconds avgTimes(const std::vector<std::chrono::milliseconds>::iterator & first,
+                                              const std::vector<std::chrono::milliseconds>::iterator & last );
+    std::chrono::milliseconds ao5();
+    std::chrono::milliseconds avg();
+    
 };
 
 Timer::Timer() : started (false),
@@ -35,6 +49,7 @@ void Timer::start() {
 void Timer::stop() {
     update();
     started = false;
+    times.push_back(time);
 }
 
 void Timer::update() {
@@ -42,8 +57,23 @@ void Timer::update() {
         time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime);
 }
 
-std::string Timer::elapsed() {
-    update();
+std::chrono::milliseconds Timer::avgTimes(const std::vector<std::chrono::milliseconds>::iterator & first,
+                                          const std::vector<std::chrono::milliseconds>::iterator & last ) {
+    std::chrono::milliseconds accumulated(0);
+    std::size_t size;
+    std::for_each(first, last, [&](std::chrono::milliseconds x){ accumulated += x; size++; });
+    return accumulated / size;
+}
+
+std::chrono::milliseconds Timer::avg() {
+    return avgTimes(times.begin(), times.end());
+}
+
+std::chrono::milliseconds Timer::ao5() {
+    return avgTimes(times.begin(), times.end());
+}
+
+std::string Timer::formatTime(std::chrono::milliseconds time) {
     auto min = std::chrono::duration_cast<std::chrono::minutes>(time);
     auto sec = std::chrono::duration_cast<std::chrono::seconds>(time - min);
     auto msec = (time - min) - sec;
@@ -54,6 +84,11 @@ std::string Timer::elapsed() {
                                       << std::setw(3) << msec.count();
 
     return resultStream.str();
+}
+
+std::string Timer::elapsed() {
+    // update();
+    return formatTime(this -> time);
 }
 
 void drawMain() {
@@ -148,7 +183,7 @@ int main() {
         }
 
             // drawTimer(timerWindow, timer);
-            std::this_thread::sleep_for(SLEEP_DURATION);
+        std::this_thread::sleep_for(SLEEP_DURATION);
     }
 
     endwin();
