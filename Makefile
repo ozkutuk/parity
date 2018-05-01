@@ -9,7 +9,7 @@ OBJS := $(patsubst %.cpp,$(BINDIR)/%.o,$(SRCS))
 all: $(BINDIR)/main
 
 $(BINDIR)/main: $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDLIBS) $(OBJS) -o $(BINDIR)/main
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LDLIBS) -o $(BINDIR)/main
 
 $(BINDIR)/%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
