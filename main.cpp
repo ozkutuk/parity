@@ -117,35 +117,15 @@ void drawMain() {
     refresh();
 }
 
-void drawTimer(WINDOW * win, Timer & timer) {
-    // TODO: do not need to calculate these every draw
-
-    // wclear(win);
+void drawCenteredString(WINDOW * win, const std::string & s) {
     int timerRow, timerCol;
     getmaxyx(win, timerRow, timerCol);
     box(win, 0, 0);
 
-    std::string startMsg(timer.elapsed());
-    // wattron(win, A_STANDOUT | A_BOLD);
     mvwprintw( win, 
                timerRow / 2,
-              (timerCol - startMsg.length()) / 2,
-               startMsg.c_str());
-    // wattroff(win, A_STANDOUT | A_BOLD);
-
-    wrefresh(win);
-}
-
-void drawAvgs(WINDOW * win, Timer & timer) {
-    int timerRow, timerCol;
-    getmaxyx(win, timerRow, timerCol);
-    box(win, 0, 0);
-
-    std::string startMsg(timer.totalAverage());
-    mvwprintw( win, 
-               timerRow / 2,
-              (timerCol - startMsg.length()) / 2,
-               startMsg.c_str());
+              (timerCol - s.length()) / 2,
+               s.c_str());
     wrefresh(win);
 }
 
@@ -178,7 +158,7 @@ WINDOW * initAvgs(WINDOW *timerWindow) {
     return avgsWindow;
 }
 
-int main() {
+int main(void) {
 
     // ncurses initialization
     initscr();
@@ -191,18 +171,18 @@ int main() {
 
     drawMain();
     WINDOW * timerWindow = initTimer();
-    drawTimer(timerWindow, timer);
+    drawCenteredString(timerWindow, timer.elapsed());
 
     WINDOW * avgsWindow = initAvgs(timerWindow);
-    drawAvgs(avgsWindow, timer);
+    drawCenteredString(avgsWindow, timer.totalAverage());
 
     int keyPressed;
     bool running = true;
 
     while (running) {
         timer.update();
-        drawTimer(timerWindow, timer);
-        drawAvgs(avgsWindow, timer);
+        drawCenteredString(timerWindow, timer.elapsed());
+        drawCenteredString(avgsWindow, timer.totalAverage());
 
         keyPressed = wgetch(timerWindow);
 
@@ -215,7 +195,7 @@ int main() {
             case KEY_RESIZE:
                 timerWindow = initTimer();
                 drawMain();
-                drawTimer(timerWindow, timer);
+                drawCenteredString(timerWindow, timer.elapsed());
                 break;
 
             case ' ':
@@ -226,7 +206,6 @@ int main() {
                 break;
         }
 
-            // drawTimer(timerWindow, timer);
         std::this_thread::sleep_for(SLEEP_DURATION);
     }
 
